@@ -5,6 +5,9 @@
 #define EEPROM_D7 12
 #define WRITE_EN 13
 
+// modified Ben's code to work more easily with a 32K eeprom
+// (thanks to sina khalili for the help)
+
 /*
  * Output the address bits and outputEnable signal using shift registers.
  */
@@ -59,14 +62,14 @@ void writeEEPROM(int address, byte data) {
  * Read the contents of the EEPROM and print them to the serial monitor.
  */
 void printContents() {
-  for (int base = 0; base <= 255; base += 16) {
+  for (int base = 0; base <= 32752; base += 16) {
     byte data[16];
     for (int offset = 0; offset <= 15; offset += 1) {
       data[offset] = readEEPROM(base + offset);
     }
 
     char buf[80];
-    sprintf(buf, "%03x:  %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x %02x %02x %02x %02x %02x %02x",
+    sprintf(buf, "%04x:  %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x %02x %02x %02x %02x %02x %02x",
             base, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
             data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
 
@@ -75,11 +78,9 @@ void printContents() {
 }
 
 
-// 4-bit hex decoder for common anode 7-segment display
-byte data[] = { 0x81, 0xcf, 0x92, 0x86, 0xcc, 0xa4, 0xa0, 0x8f, 0x80, 0x84, 0x88, 0xe0, 0xb1, 0xc2, 0xb0, 0xb8 };
+// data to program (nice!)
+byte data[] = { 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69, 0x69 };
 
-// 4-bit hex decoder for common cathode 7-segment display
-// byte data[] = { 0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f, 0x7b, 0x77, 0x1f, 0x4e, 0x3d, 0x4f, 0x47 };
 
 
 void setup() {
@@ -93,14 +94,25 @@ void setup() {
 
   // Erase entire EEPROM
   Serial.print("Erasing EEPROM");
-  for (int address = 0; address <= 2047; address += 1) {
-    writeEEPROM(address, 0xff);
 
-    if (address % 64 == 0) {
+ 
+  for (long address = 0; address <= 32767; address += 1) {
+
+    // data to erase with:
+    writeEEPROM(address, 0xea);
+
+  
+    if (address % 512 == 0) {
       Serial.print(".");
     }
   }
   Serial.println(" done");
+
+  /* Serial.print("Integer size: ");
+  Serial.println(sizeof(int)); */
+
+  Serial.print("Long size: ");
+  Serial.println(sizeof(long));
 
 
   // Program data bytes
@@ -109,7 +121,7 @@ void setup() {
     writeEEPROM(address, data[address]);
 
     if (address % 64 == 0) {
-      Serial.print(".");
+      Serial.print(". :) ");
     }
   }
   Serial.println(" done");
@@ -121,7 +133,4 @@ void setup() {
 }
 
 
-void loop() {
-  // put your main code here, to run repeatedly:
-
-}
+void loop() {}
